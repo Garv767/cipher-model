@@ -9,6 +9,7 @@ export function ModelIngestion() {
   const [pipelineState, setPipelineState] = useState<'idle' | 'uploaded' | 'processing' | 'completed'>('idle');
   const [progress, setProgress] = useState(0);
   const [processingLog, setProcessingLog] = useState<string>('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   // If already watermarked on first layout, set appropriate state
   React.useEffect(() => {
@@ -30,22 +31,42 @@ export function ModelIngestion() {
     e.preventDefault();
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      setActiveModel(e.dataTransfer.files[0].name);
+      const file = e.dataTransfer.files[0];
+      setSelectedFile(file);
+      setActiveModel(file.name);
       setPipelineState('uploaded');
       setIsWatermarked(false);
     }
   };
 
   const handleExecute = async () => {
-    if (triggers.length === 0 || !activeModel) return;
+    if (triggers.length === 0 || !activeModel || !selectedFile) return;
     
     setPipelineState('processing');
-    setProgress(0);
-    setProcessingLog('Initializing watermarking pipeline...');
+    setProgress(5);
+    setProcessingLog('Uploading model weights to forge...');
 
     try {
-      // Call backend to watermark the model
-      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/forge/watermark`, {
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+      // Step 1: Upload the file
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      const uploadResponse = await fetch(`${apiUrl}/api/forge/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!uploadResponse.ok) {
+        throw new Error('Upload failed');
+      }
+
+      setProgress(30);
+      setProcessingLog('Injecting cryptographic watermarks...');
+
+      // Step 2: Start watermarking
+      const response = await fetch(`${apiUrl}/api/forge/watermark`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -54,16 +75,13 @@ export function ModelIngestion() {
         throw new Error('Watermarking failed');
       }
       
-      const result = await response.json();
-      console.log('Watermarking result:', result);
-      
       setProgress(100);
       setProcessingLog('Watermarking complete!');
       setPipelineState('completed');
       setIsWatermarked(true);
     } catch (error) {
-      console.error('Watermarking error:', error);
-      setProcessingLog('Error: Failed to watermark model');
+      console.error('Pipeline error:', error);
+      setProcessingLog('Error: Pipeline execution failed');
       setPipelineState('uploaded');
     }
   };
@@ -127,7 +145,7 @@ export function ModelIngestion() {
                       <UploadCloud className={`w-10 h-10 mb-4 relative z-10 transition-colors ${isDragging ? 'text-emerald-500 drop-shadow-sm' : 'text-slate-500'}`} />
                       {isDragging && <div className="absolute inset-0 bg-emerald-400 blur-xl opacity-20 rounded-full" />}
                   </div>
-                  <p className="text-slate-300 font-sans font-medium text-sm mb-2 drop-shadow-sm">Drag & Drop Weights <label className="text-emerald-400 hover:text-emerald-300 underline cursor-pointer"><input type="file" className="hidden" accept=".pt,.safetensors,.gguf" onChange={(e) => { if(e.target.files?.length) { setActiveModel(e.target.files[0].name); setPipelineState('uploaded'); setIsWatermarked(false); } }} />or browse</label></p>
+                  <p className="text-slate-300 font-sans font-medium text-sm mb-2 drop-shadow-sm">Drag & Drop Weights <label className="text-emerald-400 hover:text-emerald-300 underline cursor-pointer"><input type="file" className="hidden" accept=".pt,.safetensors,.gguf" onChange={(e) => { if(e.target.files?.length) { const file = e.target.files[0]; setSelectedFile(file); setActiveModel(file.name); setPipelineState('uploaded'); setIsWatermarked(false); } }} />or browse</label></p>
                   <div className="font-mono text-[10px] text-slate-500 uppercase tracking-widest flex items-center justify-center gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-slate-600 animate-pulse" />
                       SYSTEM_AWAITING_WEIGHTS
