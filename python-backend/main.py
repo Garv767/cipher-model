@@ -10,9 +10,11 @@ from watermark_engine import WatermarkEngine
 app = FastAPI(title="Ghost-Weight Protocol API")
 
 # Setup CORS for frontend
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "*").split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

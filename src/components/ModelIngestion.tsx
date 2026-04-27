@@ -45,7 +45,7 @@ export function ModelIngestion() {
 
     try {
       // Call backend to watermark the model
-      const response = await fetch('http://localhost:8000/api/forge/watermark', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/forge/watermark`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });

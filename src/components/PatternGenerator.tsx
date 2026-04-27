@@ -22,7 +22,7 @@ export function PatternGenerator() {
     
     // Send triggers to backend
     try {
-      await fetch('http://localhost:8000/api/vault/load', {
+      await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/vault/load`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ triggers: fallbackTriggers })
@@ -80,7 +80,7 @@ export function PatternGenerator() {
         
         // Send triggers to backend
         try {
-          await fetch('http://localhost:8000/api/vault/load', {
+          await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/vault/load`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ triggers: generatedPatterns })

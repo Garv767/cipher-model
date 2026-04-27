@@ -40,7 +40,7 @@ export function VerificationTerminal() {
     
     try {
       // Call backend to scan the endpoint
-      const response = await fetch('http://localhost:8000/api/scan/ping', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}/api/scan/ping`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ endpoint_url: targetEndpoint })
